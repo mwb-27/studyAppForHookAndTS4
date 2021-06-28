@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMountedRef } from "utils";
 
 interface State<D> {
   error: Error | null;
@@ -41,7 +42,7 @@ export const useAsync = <D>(
     });
 
   const [retry, setRetry] = useState(() => () => {});
-
+  const mountedRef = useMountedRef();
   // run 用来触发异步请求
   const run = (
     promise: Promise<D>,
@@ -58,7 +59,10 @@ export const useAsync = <D>(
     });
     return promise
       .then((data) => {
-        setData(data);
+        // 判断组件是否是挂载状态。避免组件未挂载或已卸载导致赋值报错
+        if (mountedRef.current) {
+          setData(data);
+        }
         return data;
       })
       .catch((error) => {
