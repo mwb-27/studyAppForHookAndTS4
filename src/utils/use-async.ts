@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useMountedRef } from "utils";
 
 interface State<D> {
@@ -27,51 +27,58 @@ export const useAsync = <D>(
   });
   const config = { ...defaultConfig, ...initialConfig };
 
-  const setData = (data: D) =>
-    setState({
-      data,
-      error: null,
-      stat: "success",
-    });
+  const setData = useCallback(
+    (data: D) =>
+      setState({
+        data,
+        error: null,
+        stat: "success",
+      }),
+    []
+  );
 
-  const setError = (error: Error) =>
-    setState({
-      error,
-      stat: "error",
-      data: null,
-    });
+  const setError = useCallback(
+    (error: Error) =>
+      setState({
+        error,
+        stat: "error",
+        data: null,
+      }),
+    []
+  );
 
   const [retry, setRetry] = useState(() => () => {});
   const mountedRef = useMountedRef();
   // run 用来触发异步请求
-  const run = (
-    promise: Promise<D>,
-    retryConfig?: { resty: () => Promise<D> }
-  ) => {
-    if (!promise || !promise.then) {
-      throw new Error("请传入 Promise 类型数据");
-    }
-    setState({ ...state, stat: "loading" });
-    setRetry(() => () => {
-      if (retryConfig?.resty) {
-        run(retryConfig?.resty(), retryConfig);
+  const run = useCallback(
+    (promise: Promise<D>, retryConfig?: { resty: () => Promise<D> }) => {
+      if (!promise || !promise.then) {
+        throw new Error("请传入 Promise 类型数据");
       }
-    });
-    return promise
-      .then((data) => {
-        // 判断组件是否是挂载状态。避免组件未挂载或已卸载导致赋值报错
-        if (mountedRef.current) {
-          setData(data);
+      setState((prevState) => ({ ...prevState, stat: "loading" }));
+      setRetry(() => () => {
+        if (retryConfig?.resty) {
+          run(retryConfig?.resty(), retryConfig);
         }
-        return data;
-      })
-      .catch((error) => {
-        // catch会消化异常，如果不主动抛出，外面是接收不到异常的
-        setError(error);
-        if (config.throwOnError) return Promise.reject(error);
-        return error;
       });
-  };
+      return promise
+        .then((data) => {
+          // 判断组件是否是挂载状态。避免组件未挂载或已卸载导致赋值报错
+          if (mountedRef.current) {
+            setData(data);
+          }
+          return data;
+        })
+        .catch((error) => {
+          // catch会消化异常，如果不主动抛出，外面是接收不到异常的
+          setError(error);
+
+          if (config.throwOnError) return Promise.reject(error);
+          return error;
+        });
+    },
+    [config.throwOnError, mountedRef, setData, setError]
+  );
 
   return {
     isIdle: state.stat === "idle",
