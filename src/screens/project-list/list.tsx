@@ -1,10 +1,12 @@
 import React from "react";
 import { User } from "screens/project-list/search-panel";
-import { Table } from "antd";
+import { Rate, Table } from "antd";
 import dayjs from "dayjs";
 import { TableProps } from "antd/es/table";
 // react-router 和 react-router-dom的关系，类似于 react 和 react-dom/react-native/react-vr...
 import { Link } from "react-router-dom";
+import { Pin } from "components/pin";
+import { useEditProject } from "utils/project";
 
 // TODO 把所有ID都改成number类型
 export interface Project {
@@ -18,14 +20,31 @@ export interface Project {
 
 interface ListProps extends TableProps<Project> {
   users: User[];
+  refresh?: () => void;
 }
 
 export const List = ({ users, ...props }: ListProps) => {
+  const { mutate } = useEditProject();
+  const pinProject = (id: number) => async (pin: boolean) => {
+    await mutate({ id, pin }).then(props.refresh);
+  };
   return (
     <Table
       rowKey={"id"}
       pagination={false}
       columns={[
+        {
+          title: <Pin checked={true} disabled></Pin>,
+          sorter: (a, b) => a.name.localeCompare(b.name),
+          render(value, project) {
+            return (
+              <Pin
+                checked={project.pin}
+                onCheckedChange={pinProject(project.id)}
+              />
+            );
+          },
+        },
         {
           title: "名称",
           sorter: (a, b) => a.name.localeCompare(b.name),
