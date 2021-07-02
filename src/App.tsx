@@ -8,7 +8,7 @@ import { FullPageErrorFallback } from "components/lib";
 
 function App() {
   const { user } = useAuth();
-
+  // change user.email test
   return (
     <div className="App">
       <ErrorBoundary fallbackRender={FullPageErrorFallback}>
