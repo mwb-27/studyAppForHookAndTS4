@@ -28,7 +28,7 @@ import { ButtonNoPadding } from "components/lib";
 
 // prop drilling
 
-export const AuthenticatedApp = () => {
+const AuthenticatedApp = () => {
   return (
     <Container>
       <Router>
@@ -48,6 +48,8 @@ export const AuthenticatedApp = () => {
     </Container>
   );
 };
+
+export default AuthenticatedApp;
 
 const PageHeader = () => {
   return (
